@@ -42,6 +42,16 @@ Response:
   "location": "Sudirman Jakarta",
   "limit": 5
 }
+
+User: How do I get from Monas to Sudirman?
+
+Response:
+{
+  "intent": "get_directions",
+  "origin": "Monas Jakarta",
+  "destination": "Sudirman Jakarta"
+}
+
 """
 
 

@@ -55,3 +55,14 @@ def normalize_photon_places(features):
         )
 
     return places
+
+
+async def geocode_first(provider, query: str):
+    results = await provider.search_places(query=query, location="", limit=1)
+    if not results:
+        raise ValueError(f"Could not geocode location: {query}")
+
+    feature = results[0]
+    coords = feature["geometry"]["coordinates"]
+    lon, lat = coords
+    return lat, lon

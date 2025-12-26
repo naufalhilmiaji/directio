@@ -1,5 +1,5 @@
 # backend/schemas.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Literal, Optional
 
 
@@ -32,3 +32,19 @@ class PlacesResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: str
+
+
+class Route(BaseModel):
+    distance_meters: float
+    duration_seconds: float
+    geometry: dict  # GeoJSON LineString
+
+
+class DirectionsResponse(BaseModel):
+    intent: Literal["get_directions"]
+    summary: str
+    route: Route
+
+
+class CreateKeyRequest(BaseModel):
+    email: EmailStr

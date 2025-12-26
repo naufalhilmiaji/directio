@@ -5,15 +5,12 @@ import httpx
 from typing import List
 
 from backend.config import (
-    NOMINATIM_BASE_URL,
     OSRM_BASE_URL,
-    USER_AGENT,
     HTTP_REQUEST_TIMEOUT,
 )
-from backend.providers.base import MapProvider
 
 
-class OSMProvider(MapProvider):
+class OSMProvider:
     """
     OpenStreetMap provider using:
     - Nominatim for place search
@@ -34,27 +31,18 @@ class OSMProvider(MapProvider):
                 await asyncio.sleep(self._min_interval - elapsed)
             self._last_request_ts = asyncio.get_event_loop().time()
 
-    async def search_places(
-        self,
-        query: str,
-        location: str,
-        limit: int,
-    ) -> List[dict]:
-        if not query or not location:
-            raise ValueError("Query and location must be provided")
+    async def get_directions(self, origin: tuple, destination: tuple):
+        """
+        origin, destination: (lat, lon)
+        """
+        lat1, lon1 = origin
+        lat2, lon2 = destination
 
-        await self._rate_limit()
+        url = f"{OSRM_BASE_URL}/route/v1/driving/" f"{lon1},{lat1};{lon2},{lat2}"
 
         params = {
-            "q": f"{query} in {location}",
-            "format": "json",
-            "limit": limit,
-            "addressdetails": 1,
-        }
-
-        headers = {
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
+            "overview": "full",
+            "geometries": "geojson",
         }
 
         timeout = httpx.Timeout(
@@ -66,28 +54,24 @@ class OSMProvider(MapProvider):
 
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
-                resp = await client.get(
-                    f"{NOMINATIM_BASE_URL}/search",
-                    params=params,
-                    headers=headers,
-                )
+                resp = await client.get(url, params=params)
                 resp.raise_for_status()
 
         except httpx.ReadTimeout:
-            raise ValueError("OSM search timeout")
+            raise ValueError("OSRM routing timeout")
 
         except httpx.HTTPStatusError as e:
-            raise ValueError(f"OSM search failed with status {e.response.status_code}")
-
-        except httpx.RequestError:
-            raise ValueError("OSM search request error")
+            raise ValueError(f"OSRM routing failed with status {e.response.status_code}")
 
         data = resp.json()
 
-        if not isinstance(data, list):
-            raise ValueError("Unexpected OSM response format")
+        if "routes" not in data or not data["routes"]:
+            raise ValueError("No route found")
 
-        return data
+        route = data["routes"][0]
 
-    async def get_directions(self, origin: str, destination: str):
-        raise NotImplementedError("OSRM directions not implemented yet")
+        return {
+            "distance": route["distance"],
+            "duration": route["duration"],
+            "geometry": route["geometry"],
+        }

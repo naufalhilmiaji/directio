@@ -13,6 +13,5 @@ PHOTON_BASE_URL = "https://photon.komoot.io/api"
 
 USER_AGENT = "LocalLLM-Maps/1.0 (learning project; contact: yourname@example.com)"
 
-
-LLM_REQUEST_TIMEOUT = 60  # seconds
+LLM_REQUEST_TIMEOUT = 120  # seconds
 HTTP_REQUEST_TIMEOUT = 10

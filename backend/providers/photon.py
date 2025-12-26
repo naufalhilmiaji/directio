@@ -5,14 +5,10 @@ import httpx
 import time
 from typing import List
 
-from backend.config import (
-    PHOTON_BASE_URL,
-    HTTP_REQUEST_TIMEOUT,
-)
-from backend.providers.base import MapProvider
+from backend.config import PHOTON_BASE_URL, HTTP_REQUEST_TIMEOUT
 
 
-class PhotonProvider(MapProvider):
+class PhotonProvider:
     """
     Map provider backed by Photon (OpenStreetMap data).
     Suitable for backend and LLM-driven usage.
@@ -75,6 +71,3 @@ class PhotonProvider(MapProvider):
             raise ValueError("Unexpected Photon response format")
 
         return data["features"]
-
-    async def get_directions(self, origin: str, destination: str):
-        raise NotImplementedError("OSRM directions not implemented yet")
