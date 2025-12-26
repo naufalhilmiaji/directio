@@ -1,0 +1,17 @@
+{
+  "intent": "find_places",
+  "summary": "Ramen places near Sudirman Jakarta",
+  "places": [{
+    "name": "Ramen 38",
+    "lat": -6.2275566,
+    "lon": 106.809542,
+    "address": "Sudirman Central Business District Northway, Jakarta, Indonesia",
+    "map_url": "https://www.openstreetmap.org/?mlat=-6.2275566&mlon=106.809542#map=18/-6.2275566/106.809542"
+  }, {
+    "name": "Tazawa Ramen",
+    "lat": -6.2278246,
+    "lon": 106.8095501,
+    "address": "Sudirman Central Business District Northway, Jakarta, Indonesia",
+    "map_url": "https://www.openstreetmap.org/?mlat=-6.2278246&mlon=106.8095501#map=18/-6.2278246/106.8095501"
+  }]
+}
