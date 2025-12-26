@@ -9,7 +9,7 @@ EMAIL_INDEX: Dict[str, str] = {}
 
 
 def generate_api_key() -> str:
-    return "dir_live_" + secrets.token_urlsafe(32)
+    return "directio_" + secrets.token_urlsafe(32)
 
 
 def register_api_key(email: str, rate_limit: int = 10) -> str:
