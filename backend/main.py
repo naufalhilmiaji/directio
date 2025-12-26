@@ -47,7 +47,13 @@ async def create_api_key(request: Request, payload: CreateKeyRequest):
             detail="Too many key creation requests",
         )
 
-    api_key = register_api_key(payload.email)
+    try:
+        api_key = register_api_key(payload.email)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+        )
 
     return {
         "message": "API key created. Store it securely; it will not be shown again.",
