@@ -1,138 +1,37 @@
 # directio
 
-**directio** is a backend service that converts natural-language intent into
-map-based place search and directions.
+**directio** is an API that turns natural-language requests into **places and directions** using open map data.
 
-It uses a **local large language model (LLM)** to understand what the user wants,
-then resolves that intent into concrete geographic results using
-**OpenStreetMap-based data**.
+You send a sentence like:
 
-The system is designed to be deterministic, provider-agnostic, and suitable for
-applications that need structured map responses without relying on hosted LLM
-APIs or paid map services.
+> “Where can I eat ramen near Sudirman Jakarta?”
 
----
+And get back structured, map-ready results.
 
-## What directio does
-
-- Accepts natural-language queries such as:
-  - “Where can I eat ramen near Sudirman?”
-  - “Find coffee shops around my office”
-- Extracts structured intent using a **locally running LLM**
-- Resolves that intent into real places or routes via map providers
-- Returns clean, predictable JSON responses ready for frontend consumption
-
-directio is intentionally scoped as a **backend service**, not a UI.
+directio uses a **local LLM** for intent understanding and **OpenStreetMap-based services** for maps and routing.
+No hosted LLM APIs. No paid map services.
 
 ---
 
-## Architecture
+## What can I do with directio?
 
-directio is designed as a small, composable backend with clear separation of
-responsibilities.
+* Find places by natural language
+  *“Find coffee shops near my office”*
+* Get directions between locations
+  *“How do I get from Monas to Sudirman?”*
+* Build map-based apps without writing search or routing logic
+* Use your **own API key** with per-user rate limits
 
-At a high level, the system follows a simple pipeline:
-
-```
-
-User input → Intent extraction → Map resolution → Structured response
-
-````
-
-### Core components
-
-- **API layer (FastAPI)**  
-  Exposes a minimal JSON API and handles request validation and error mapping.
-
-- **Intent engine (Local LLM)**  
-  A locally running LLM is used exclusively to extract structured intent
-  (e.g. place search or directions) from natural-language input.  
-  The model does not access external services directly.
-
-- **Service layer**  
-  Orchestrates intent handling, caching, and provider selection.
-  This layer contains the application logic.
-
-- **Map providers**  
-  Pluggable provider implementations resolve geographic intent into real-world
-  data.  
-  The current implementation uses OpenStreetMap-based services, with the design
-  allowing additional providers to be added without changing core logic.
-
-- **Caching layer**  
-  A lightweight, in-memory TTL cache reduces repeated external requests and
-  improves response latency.
-
-### Design principles
-
-- **Provider-agnostic**  
-  Map services are abstracted behind a common interface to avoid vendor lock-in.
-
-- **LLM isolation**  
-  The LLM is responsible only for intent extraction. All side effects and
-  external calls are handled by deterministic code.
-
-- **Rate-limit aware**  
-  External map services are accessed conservatively, with caching and throttling
-  to respect usage policies.
-
-- **Structured outputs**  
-  All responses are returned as predictable JSON objects suitable for frontend
-  consumption.
+directio is a **backend API**, designed to be consumed by web or mobile apps.
 
 ---
 
-## Example API usage
+## Quick start
 
-### Request
-
-```bash
-curl -X POST http://127.0.0.1:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message":"Where can I eat ramen near Sudirman Jakarta?"}'
-````
-
-### Response
-
-```json
-{
-  "intent": "find_places",
-  "summary": "Ramen places near Sudirman Jakarta",
-  "places": [
-    {
-      "name": "Ramen 38",
-      "lat": -6.2275566,
-      "lon": 106.809542,
-      "address": "Sudirman Central Business District Northway, Jakarta, Indonesia",
-      "map_url": "https://www.openstreetmap.org/?mlat=-6.2275566&mlon=106.809542#map=18/-6.2275566/106.809542"
-    }
-  ]
-}
-```
-
----
-
-## Requirements
-
-* Python 3.10+
-* A local LLM runtime (e.g. Ollama)
-* Internet access for map data
-
-No API keys or billing setup are required.
-
----
-
-## Setup
-
-Install dependencies:
+### 1️⃣ Run the server
 
 ```bash
 pip install -r requirements.txt
-```
-
-Run the server:
-
-```bash
 uvicorn backend.main:app
 ```
 
@@ -144,32 +43,132 @@ http://127.0.0.1:8000
 
 ---
 
+### 2️⃣ Create an API key (one time)
+
+directio uses API-key authentication.
+Each user has **one API key**.
+
+```bash
+curl -X POST http://127.0.0.1:8000/keys \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com"}'
+```
+
+Response:
+
+```json
+{
+  "message": "API key created. Store it securely; it will not be shown again.",
+  "api_key": "directio_xxxxxxxxxxxxxxxxxxxxx"
+}
+```
+
+⚠️ Save this key. It cannot be recovered later.
+
+---
+
+### 3️⃣ Make a request
+
+Use your API key in the `X-API-Key` header.
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: directio_xxxxxxxxxxxxxxxxxxxxx" \
+  -d '{"message":"Where can I eat ramen near Sudirman Jakarta?"}'
+```
+
+---
+
+## Example responses
+
+### Place search
+
+```json
+{
+  "intent": "find_places",
+  "summary": "Ramen places near Sudirman Jakarta",
+  "places": [
+    {
+      "name": "Ramen 38",
+      "lat": -6.2275566,
+      "lon": 106.809542,
+      "address": "Jakarta, Indonesia",
+      "map_url": "https://www.openstreetmap.org/?mlat=-6.2275566&mlon=106.809542"
+    }
+  ]
+}
+```
+
+---
+
+### Directions
+
+```json
+{
+  "intent": "get_directions",
+  "summary": "Directions from Monas Jakarta to Sudirman Jakarta",
+  "route": {
+    "distance_meters": 5200,
+    "duration_seconds": 900,
+    "geometry": {
+      "type": "LineString",
+      "coordinates": [...]
+    }
+  }
+}
+```
+
+The route geometry can be rendered directly in map libraries like **Leaflet**.
+
+---
+
+## Authentication & rate limits
+
+* Authentication is done via **API keys**
+* One API key per email
+* API keys are required for `/chat`
+* Requests are rate-limited **per API key**
+* Key creation (`/keys`) is IP-rate-limited to prevent abuse
+
+If a limit is exceeded, the API returns:
+
+```json
+{
+  "detail": "Too many requests"
+}
+```
+
+---
+
+## Why local LLMs?
+
+directio uses a **local LLM only for intent extraction**.
+
+* No user data sent to third-party LLM APIs
+* Predictable behavior
+* Full control over failures and latency
+
+The LLM does **not** call map services directly — all external access is handled by deterministic backend code.
+
+---
+
 ## Project status
 
 directio is currently focused on:
 
-* Intent-driven place search
-* Stable backend architecture
+* Stable intent extraction
+* Place search
+* Directions & routing
 * Clean API contracts
+* Safe usage limits
 
-Future work may include:
+Planned improvements:
 
-* Route and direction handling
+* Persistent API key storage
+* Usage metrics per key
+* Frontend examples
 * Additional map providers
-* Persistent caching (e.g. Redis)
-* Frontend integration examples
-
----
-
-## Why local LLMs
-
-directio intentionally uses a **local LLM** to:
-
-* Avoid external LLM dependencies
-* Keep intent extraction deterministic and inspectable
-* Maintain full control over data flow and failure modes
-
-The LLM is treated as a pure intent parser, not a decision-maker.
 
 ---
 
