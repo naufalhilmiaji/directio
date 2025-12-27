@@ -7,6 +7,7 @@ from fastapi import (
     Request,
     Depends,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
 from backend.schemas import ChatRequest, CreateKeyRequest
@@ -19,6 +20,19 @@ from backend.security.auth import get_current_user
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="directio API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://localhost:5500",  # common for local HTML servers
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Rate limiters
 chat_rate_limiter = SimpleRateLimiter(

@@ -29,6 +29,33 @@ def build_directions_cache_key(intent) -> str:
     return f"get_directions|{_normalize(intent.origin)}|{_normalize(intent.destination)}"
 
 
+def enforce_direction_intent(message: str, intent):
+    text = message.lower()
+    print(f"Message: {message}")
+
+    movement_keywords = [
+        "go to",
+        "from",
+        "to",
+        "get to",
+        "directions",
+        "navigate",
+        "how do i get",
+    ]
+
+    if any(k in text for k in movement_keywords):
+        # If LLM downgraded to find_places, fix it
+        if intent.intent == "find_places":
+            # We already have the right data, just remap
+            intent.intent = "get_directions"
+            intent.origin = intent.location
+            intent.destination = intent.query.replace("go to", "").strip()
+            intent.query = None
+            intent.location = None
+
+    return intent
+
+
 async def handle_chat(message: str):
     MAX_MESSAGE_LENGTH = 500
 
@@ -36,7 +63,9 @@ async def handle_chat(message: str):
         raise HTTPException(status_code=400, detail="Message too long")
 
     intent = await extract_intent(message)
+    intent = enforce_direction_intent(message, intent)
 
+    print(intent)
     if intent.intent == "find_places":
         if not intent.query or not intent.location:
             raise ValueError("Missing query or location")

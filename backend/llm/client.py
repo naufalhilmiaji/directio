@@ -1,5 +1,5 @@
-# backend/llm/client.py
 import json
+import re
 import httpx
 import time
 from backend.config import LLM_ENDPOINT, LLM_MODEL, LLM_REQUEST_TIMEOUT
@@ -10,6 +10,8 @@ SYSTEM_PROMPT = """
 You are an API planner.
 
 Convert the user request into JSON ONLY.
+Your response MUST be valid JSON.
+Double-check commas, quotes, and braces before responding.
 Do not explain.
 Do not include markdown.
 Do not include text outside JSON.
@@ -17,6 +19,15 @@ Do not include text outside JSON.
 Supported intents:
 - find_places
 - get_directions
+
+Intent selection rules:
+- Use "get_directions" when the user expresses movement, travel, or navigation
+  between two locations (e.g. "go to", "from ... to ...", "how do I get",
+  "directions", "navigate").
+- If the user expresses movement between two named places,
+  you MUST choose "get_directions" even if the fields are ambiguous.
+- Use "find_places" ONLY when the user is searching for places near a location,
+  not when they want to travel between two locations.
 
 Rules:
 - For intent "find_places", you MUST include:
@@ -31,7 +42,7 @@ infer a reasonable city or area from the message.
 
 Always return ALL required fields.
 
-Example:
+Examples:
 
 User: Where can I eat ramen near Sudirman Jakarta?
 
@@ -52,6 +63,14 @@ Response:
   "destination": "Sudirman Jakarta"
 }
 
+User: I want to go to Monumen Nasional Jakarta from Margo City Depok
+
+Response:
+{
+  "intent": "get_directions",
+  "origin": "Margo City Depok",
+  "destination": "Monumen Nasional Jakarta"
+}
 """
 
 
@@ -61,6 +80,20 @@ timeout = httpx.Timeout(
     write=5.0,
     pool=5.0,
 )
+
+
+def parse_json_strict(text: str) -> dict:
+    # Extract first JSON object from text
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if not match:
+        raise ValueError("No JSON object found in LLM output")
+
+    json_text = match.group(0)
+
+    try:
+        return json.loads(json_text)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON from LLM: {e}")
 
 
 async def extract_intent(message: str) -> LLMIntent:
@@ -88,7 +121,7 @@ async def extract_intent(message: str) -> LLMIntent:
         raise ValueError("LLM returned empty response")
 
     try:
-        data = json.loads(raw)
+        data = parse_json_strict(raw)
     except httpx.ReadTimeout:
         raise ValueError("LLM timeout: model took too long to respond")
 

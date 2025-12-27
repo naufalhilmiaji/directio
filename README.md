@@ -153,6 +153,14 @@ The LLM does **not** call map services directly — all external access is handl
 
 ---
 
+## Limitations
+
+- API keys are stored in memory and reset on server restart
+- Local LLM response time depends on available hardware
+- Not intended for high-traffic production use
+
+---
+
 ## Project status
 
 directio is currently focused on:
