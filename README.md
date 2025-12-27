@@ -26,6 +26,46 @@ directio is a **backend API**, designed to be consumed by web or mobile apps.
 
 ---
 
+## Architecture overview
+
+* A local LLM extracts **intent and parameters** from natural language
+* Backend logic deterministically executes:
+
+  * place search
+  * geocoding
+  * routing
+* Map data is provided by OpenStreetMap-based services
+* Results are returned as clean JSON, ready for frontend rendering
+
+The LLM is used **only for intent extraction**.
+All external API calls are handled by backend providers.
+
+---
+
+## Why OpenStreetMap instead of Google Maps API?
+
+This project intentionally uses OpenStreetMap-based services because:
+
+* Google Maps requires billing verification and payment setup, even for basic API usage
+* The goal is to keep the project **fully runnable and reviewable without payment gates**
+* Photon (geocoding) and OSRM (routing) are widely used open alternatives suitable for backend system design demonstrations
+
+The provider layer is **architecture-agnostic** — swapping in Google Maps or another commercial provider would primarily involve adapter changes rather than a redesign.
+
+---
+
+## LLM setup (Ollama)
+
+directio uses a **local LLM served by Ollama**, running in Docker.
+
+* No external LLM API keys required
+* All inference happens locally
+* Docker provides environment isolation and reproducibility
+
+The system is designed to tolerate imperfect LLM output via validation and fallback logic.
+
+---
+
 ## Quick start
 
 ### 1️⃣ Run the server
@@ -40,6 +80,8 @@ The API will be available at:
 ```
 http://127.0.0.1:8000
 ```
+
+> Make sure Ollama is running before starting the API.
 
 ---
 
@@ -155,9 +197,9 @@ The LLM does **not** call map services directly — all external access is handl
 
 ## Limitations
 
-- API keys are stored in memory and reset on server restart
-- Local LLM response time depends on available hardware
-- Not intended for high-traffic production use
+* API keys are stored in memory and reset on server restart
+* Local LLM response time depends on available hardware
+* Not intended for high-traffic production use
 
 ---
 
