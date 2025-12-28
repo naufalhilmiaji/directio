@@ -1,0 +1,12 @@
+{
+    "intent": "get_directions",
+    "summary": "Directions from Monas Jakarta to Sudirman Jakarta",
+    "route": {
+        "distance_meters": 5200,
+        "duration_seconds": 900,
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [[106.827153, -6.175110], [106.827153, -6.175110], ...]
+        }
+    }
+}
